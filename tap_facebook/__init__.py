@@ -45,7 +45,7 @@ INSIGHTS_MAX_WAIT_TO_START_SECONDS = 5 * 60
 INSIGHTS_MAX_WAIT_TO_FINISH_SECONDS = 30 * 60
 INSIGHTS_MAX_ASYNC_SLEEP_SECONDS = 5 * 60
 
-RESULT_RETURN_LIMIT = 100
+RESULT_RETURN_LIMIT = 1000
 
 REQUEST_TIMEOUT = 300
 
@@ -614,12 +614,12 @@ class AdsInsights(Stream):
         if self.options.get('primary-keys'):
             self.key_properties.extend(self.options['primary-keys'])
 
-        self.buffer_days = 28
+        self.buffer_days = 1
         if CONFIG.get('insights_buffer_days'):
             self.buffer_days = int(CONFIG.get('insights_buffer_days'))
-            # attribution window should only be 1, 7 or 28
-            if self.buffer_days not in [1, 7, 28]:
-                raise Exception("The attribution window must be 1, 7 or 28.")
+            # attribution window should only be 0, 1, 7 or 28
+            if self.buffer_days not in [0, 1, 7, 28]:
+                raise Exception("The attribution window must be 0, 1, 7 or 28.")
 
     def job_params(self):
         start_date = get_start(self, self.bookmark_key)
@@ -669,7 +669,7 @@ class AdsInsights(Stream):
             is_async=True)
         status = None
         time_start = time.time()
-        sleep_time = 10
+        sleep_time = 5
         while status != "Job Completed":
             duration = time.time() - time_start
             job = AdsInsights.__api_get_with_retry(job)
@@ -699,7 +699,7 @@ class AdsInsights(Stream):
             LOGGER.info("sleeping for %d seconds until job is done", sleep_time)
             time.sleep(sleep_time)
             if sleep_time < INSIGHTS_MAX_ASYNC_SLEEP_SECONDS:
-                sleep_time = 2 * sleep_time
+                sleep_time = sleep_time + 1
         return job
 
     def __iter__(self):
